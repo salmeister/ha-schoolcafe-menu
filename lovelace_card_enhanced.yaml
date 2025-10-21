@@ -1,0 +1,171 @@
+# Enhanced SchoolCafe Menu Card with Rich Details
+# Uses all the rich attributes from the integration
+
+type: vertical-stack
+title: 🍽️ PLHS Lunch Menu
+cards:
+  # Today's Detailed Menu
+  - type: conditional
+    conditions:
+      - condition: template
+        value_template: >
+          {{ now().weekday() < 5 }}
+    card:
+      type: entities
+      title: >
+        📅 Today - {{ now().strftime('%A, %B %d') }}
+      entities:
+        # Blue Line with details
+        - type: conditional
+          conditions:
+            - condition: template
+              value_template: >
+                {{ states('sensor.schoolcafe_fixed_blue_line_today') not in ['unavailable', 'unknown', 'No items available'] }}
+          row:
+            entity: sensor.schoolcafe_fixed_blue_line_today
+            name: "🔵 Blue Line"
+            icon: mdi:food
+            secondary_info: >
+              {% set items = state_attr('sensor.schoolcafe_fixed_blue_line_today', 'items') %}
+              {% if items and items|length > 0 %}
+                {% set item = items[0] %}
+                {{ item.calories }} cal • {{ item.rating }}⭐ • {{ item.likes_percentage }}% like it
+              {% endif %}
+        
+        # Gold Line with details
+        - type: conditional
+          conditions:
+            - condition: template
+              value_template: >
+                {{ states('sensor.schoolcafe_fixed_gold_line_today') not in ['unavailable', 'unknown', 'No items available'] }}
+          row:
+            entity: sensor.schoolcafe_fixed_gold_line_today
+            name: "🟡 Gold Line"
+            icon: mdi:food
+            secondary_info: >
+              {% set items = state_attr('sensor.schoolcafe_fixed_gold_line_today', 'items') %}
+              {% if items and items|length > 0 %}
+                {% set item = items[0] %}
+                {{ item.calories }} cal • {{ item.rating }}⭐ • {{ item.likes_percentage }}% like it
+              {% endif %}
+
+        # Allergen Alert (if any items have common allergens)
+        - type: conditional
+          conditions:
+            - condition: template
+              value_template: >
+                {% set blue_items = state_attr('sensor.schoolcafe_fixed_blue_line_today', 'items') %}
+                {% set gold_items = state_attr('sensor.schoolcafe_fixed_gold_line_today', 'items') %}
+                {% set all_allergens = [] %}
+                {% if blue_items %}
+                  {% for item in blue_items %}
+                    {% set all_allergens = all_allergens + item.allergens %}
+                  {% endfor %}
+                {% endif %}
+                {% if gold_items %}
+                  {% for item in gold_items %}
+                    {% set all_allergens = all_allergens + item.allergens %}
+                  {% endfor %}
+                {% endif %}
+                {{ all_allergens|length > 0 }}
+          row:
+            type: section  
+            label: >
+              ⚠️ Allergens: {% set blue_items = state_attr('sensor.schoolcafe_fixed_blue_line_today', 'items') %}
+              {% set gold_items = state_attr('sensor.schoolcafe_fixed_gold_line_today', 'items') %}
+              {% set all_allergens = [] %}
+              {% if blue_items %}
+                {% for item in blue_items %}
+                  {% set all_allergens = all_allergens + item.allergens %}
+                {% endfor %}
+              {% endif %}
+              {% if gold_items %}
+                {% for item in gold_items %}
+                  {% set all_allergens = all_allergens + item.allergens %}
+                {% endfor %}
+              {% endif %}
+              {{ all_allergens|unique|join(', ') }}
+
+        # No School Today
+        - type: conditional
+          conditions:
+            - condition: template
+              value_template: >
+                {{ states('sensor.schoolcafe_fixed_blue_line_today') in ['unavailable', 'unknown', 'No items available'] and
+                   states('sensor.schoolcafe_fixed_gold_line_today') in ['unavailable', 'unknown', 'No items available'] }}
+          row:
+            type: section
+            label: "🏫 No School Today"
+
+  # Quick Overview for Rest of Week
+  - type: entities
+    title: "📋 This Week at a Glance"
+    entities:
+      # Tomorrow
+      - entity: sensor.schoolcafe_fixed_blue_line_tomorrow
+        name: >
+          Tomorrow ({{ (now().date() + timedelta(days=1)).strftime('%a %m/%d') }})
+        icon: mdi:calendar-today
+        secondary_info: >
+          {% if states('sensor.schoolcafe_fixed_blue_line_tomorrow') not in ['unavailable', 'unknown', 'No items available'] %}
+            🔵 {{ states('sensor.schoolcafe_fixed_blue_line_tomorrow') }}
+          {% elif states('sensor.schoolcafe_fixed_gold_line_tomorrow') not in ['unavailable', 'unknown', 'No items available'] %}
+            🟡 {{ states('sensor.schoolcafe_fixed_gold_line_tomorrow') }}
+          {% else %}
+            No School
+          {% endif %}
+
+      # Day +2
+      - entity: sensor.schoolcafe_fixed_blue_line_today_plus2
+        name: >
+          {{ (now().date() + timedelta(days=2)).strftime('%A %m/%d') }}
+        icon: mdi:calendar-today
+        secondary_info: >
+          {% if states('sensor.schoolcafe_fixed_blue_line_today_plus2') not in ['unavailable', 'unknown', 'No items available'] %}
+            🔵 {{ states('sensor.schoolcafe_fixed_blue_line_today_plus2') }}
+          {% elif states('sensor.schoolcafe_fixed_gold_line_today_plus2') not in ['unavailable', 'unknown', 'No items available'] %}
+            🟡 {{ states('sensor.schoolcafe_fixed_gold_line_today_plus2') }}
+          {% else %}
+            No School
+          {% endif %}
+
+      # Day +3
+      - entity: sensor.schoolcafe_fixed_blue_line_today_plus3
+        name: >
+          {{ (now().date() + timedelta(days=3)).strftime('%A %m/%d') }}
+        icon: mdi:calendar-today
+        secondary_info: >
+          {% if states('sensor.schoolcafe_fixed_blue_line_today_plus3') not in ['unavailable', 'unknown', 'No items available'] %}
+            🔵 {{ states('sensor.schoolcafe_fixed_blue_line_today_plus3') }}
+          {% elif states('sensor.schoolcafe_fixed_gold_line_today_plus3') not in ['unavailable', 'unknown', 'No items available'] %}
+            🟡 {{ states('sensor.schoolcafe_fixed_gold_line_today_plus3') }}
+          {% else %}
+            No School
+          {% endif %}
+
+      # Day +4
+      - entity: sensor.schoolcafe_fixed_blue_line_today_plus4
+        name: >
+          {{ (now().date() + timedelta(days=4)).strftime('%A %m/%d') }}
+        icon: mdi:calendar-today
+        secondary_info: >
+          {% if states('sensor.schoolcafe_fixed_blue_line_today_plus4') not in ['unavailable', 'unknown', 'No items available'] %}
+            🔵 {{ states('sensor.schoolcafe_fixed_blue_line_today_plus4') }}
+          {% elif states('sensor.schoolcafe_fixed_gold_line_today_plus4') not in ['unavailable', 'unknown', 'No items available'] %}
+            🟡 {{ states('sensor.schoolcafe_fixed_gold_line_today_plus4') }}
+          {% else %}
+            No School
+          {% endif %}
+
+  # Weekend message
+  - type: conditional
+    conditions:
+      - condition: template
+        value_template: >
+          {{ now().weekday() >= 5 }}
+    card:
+      type: markdown
+      content: |
+        ## 🏖️ Weekend - No School
+        
+        Enjoy your weekend! School menus will be available again on Monday.

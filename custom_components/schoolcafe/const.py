@@ -19,9 +19,9 @@ DEFAULT_SERVING_LINE = "Main Lines"
 DEFAULT_PERSON_ID = None
 DEFAULT_MENU_LINES = ["BLUE LINE", "GOLD LINE"]
 DEFAULT_DAYS_TO_FETCH = 7
-DEFAULT_POLL_INTERVAL = 60  # 1 hour in minutes
-MIN_POLL_INTERVAL = 15  # Minimum 15 minutes
-MAX_POLL_INTERVAL = 1440  # Maximum 24 hours
+DEFAULT_POLL_INTERVAL = 60  # Update every 60 minutes (1 hour)
+MIN_POLL_INTERVAL = 15  # Minimum: 15 minutes
+MAX_POLL_INTERVAL = 1440  # Maximum: 1440 minutes (24 hours)
 
 # API constants
 SCHOOLCAFE_API_BASE = "https://webapis.schoolcafe.com/api"

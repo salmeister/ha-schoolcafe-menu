@@ -17,8 +17,8 @@
         "description": "Configure advanced settings for your SchoolCafe integration.",
         "data": {
           "menu_lines": "Menu Lines (comma-separated)",
-          "days_to_fetch": "Days to Fetch",
-          "poll_interval": "Poll Interval (minutes)"
+          "days_to_fetch": "Days to Fetch (1-30)",
+          "poll_interval": "Update Interval (minutes, 15-1440)"
         }
       }
     },
@@ -43,8 +43,8 @@
           "serving_line": "Serving Line",
           "person_id": "Person ID (optional)",
           "menu_lines": "Menu Lines (comma-separated)",
-          "days_to_fetch": "Days to Fetch",
-          "poll_interval": "Poll Interval (minutes)"
+          "days_to_fetch": "Days to Fetch (1-30)",
+          "poll_interval": "Update Interval (minutes, 15-1440)"
         }
       }
     }

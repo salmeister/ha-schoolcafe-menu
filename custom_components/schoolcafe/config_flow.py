@@ -171,6 +171,88 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Handle import from configuration.yaml."""
         return await self.async_step_user(user_input)
 
+    @staticmethod
+    def async_get_options_flow(
+        config_entry: config_entries.ConfigEntry,
+    ) -> config_entries.OptionsFlow:
+        """Create the options flow."""
+        return OptionsFlowHandler(config_entry)
+
+
+class OptionsFlowHandler(config_entries.OptionsFlow):
+    """Handle options flow for SchoolCafe integration."""
+
+    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+        """Initialize options flow."""
+        self.config_entry = config_entry
+
+    async def async_step_init(
+        self, user_input: Optional[Dict[str, Any]] = None
+    ) -> FlowResult:
+        """Manage the options."""
+        errors: Dict[str, str] = {}
+
+        if user_input is not None:
+            try:
+                # Process menu lines from comma-separated string to list
+                menu_lines_str = user_input.get(CONF_MENU_LINES, ", ".join(DEFAULT_MENU_LINES))
+                menu_lines = [line.strip().upper() for line in menu_lines_str.split(",") if line.strip()]
+                
+                if not menu_lines:
+                    menu_lines = DEFAULT_MENU_LINES
+                
+                # Update the processed menu lines
+                user_input[CONF_MENU_LINES] = menu_lines
+                
+                return self.async_create_entry(title="", data=user_input)
+                
+            except Exception:  # pylint: disable=broad-except
+                _LOGGER.exception("Unexpected exception")
+                errors["base"] = "unknown"
+
+        # Get current config values
+        current_config = self.config_entry.data
+        menu_lines_str = ", ".join(current_config.get(CONF_MENU_LINES, DEFAULT_MENU_LINES))
+        
+        options_schema = vol.Schema(
+            {
+                vol.Optional(
+                    CONF_GRADE,
+                    default=current_config.get(CONF_GRADE, DEFAULT_GRADE)
+                ): str,
+                vol.Optional(
+                    CONF_MEAL_TYPE,
+                    default=current_config.get(CONF_MEAL_TYPE, DEFAULT_MEAL_TYPE)
+                ): str,
+                vol.Optional(
+                    CONF_SERVING_LINE,
+                    default=current_config.get(CONF_SERVING_LINE, DEFAULT_SERVING_LINE)
+                ): str,
+                vol.Optional(
+                    CONF_PERSON_ID,
+                    default=current_config.get(CONF_PERSON_ID, "")
+                ): str,
+                vol.Optional(
+                    CONF_MENU_LINES,
+                    default=menu_lines_str
+                ): str,
+                vol.Optional(
+                    CONF_DAYS_TO_FETCH,
+                    default=current_config.get(CONF_DAYS_TO_FETCH, DEFAULT_DAYS_TO_FETCH)
+                ): vol.All(vol.Coerce(int), vol.Range(min=1, max=30)),
+                vol.Optional(
+                    CONF_POLL_INTERVAL,
+                    default=current_config.get(CONF_POLL_INTERVAL, DEFAULT_POLL_INTERVAL)
+                ): vol.All(vol.Coerce(int), vol.Range(min=MIN_POLL_INTERVAL, max=MAX_POLL_INTERVAL)),
+            }
+        )
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=options_schema,
+            errors=errors,
+        )
+
 
 class CannotConnect(HomeAssistantError):
     """Error to indicate we cannot connect."""
