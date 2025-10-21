@@ -1,6 +1,6 @@
 """Constants for the SchoolCafe integration."""
 
-DOMAIN = "schoolcafe"
+DOMAIN = "schoolcafe_menu"
 
 # Configuration keys
 CONF_SCHOOL_ID = "school_id"
@@ -42,3 +42,4 @@ ATTR_SERVING_SIZE = "serving_size"
 ATTR_INGREDIENTS = "ingredients"
 ATTR_NUTRITION = "nutrition"
 ATTR_IS_WEEKDAY = "is_weekday"
+
