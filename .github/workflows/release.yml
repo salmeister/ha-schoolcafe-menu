@@ -8,38 +8,43 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Validate version
+      - name: Get version info
+        id: version
         run: |
-          VERSION="${{ github.event.release.tag_name }}"
+          TAG_VERSION="${{ github.event.release.tag_name }}"
           # Remove 'v' prefix if present
-          VERSION=${VERSION#v}
+          CLEAN_VERSION=${TAG_VERSION#v}
+          
+          MANIFEST_VERSION=$(grep '"version"' custom_components/schoolcafe/manifest.json | cut -d'"' -f4)
+          
+          echo "tag_version=$TAG_VERSION" >> $GITHUB_OUTPUT
+          echo "clean_version=$CLEAN_VERSION" >> $GITHUB_OUTPUT
+          echo "manifest_version=$MANIFEST_VERSION" >> $GITHUB_OUTPUT
+          
+          echo "Tag version: $TAG_VERSION"
+          echo "Clean version: $CLEAN_VERSION"  
+          echo "Manifest version: $MANIFEST_VERSION"
           
           # Validate semantic versioning format
-          if [[ ! $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          if [[ ! $CLEAN_VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Error: Version must follow semantic versioning (e.g., 1.0.0)"
             exit 1
           fi
-          
-          # Update manifest.json with the new version
-          sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" custom_components/schoolcafe/manifest.json
-          
-          echo "Version $VERSION is valid"
 
       - name: Create Release Archive
         run: |
           cd custom_components
-          zip -r ../schoolcafe.zip schoolcafe/
+          zip -r ../schoolcafe-${{ steps.version.outputs.manifest_version }}.zip schoolcafe/
+          ls -la ../schoolcafe-*.zip
           
       - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./schoolcafe.zip
-          asset_name: schoolcafe.zip
-          asset_content_type: application/zip
+        run: |
+          gh release upload ${{ github.event.release.tag_name }} schoolcafe-${{ steps.version.outputs.manifest_version }}.zip --clobber
