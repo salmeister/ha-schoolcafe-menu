@@ -155,8 +155,8 @@ class SchoolCafeMenuSensor(CoordinatorEntity, SensorEntity):
         else:
             day_suffix = f"today_plus{day_offset}"
             
-        # Entity ID: sensor.schoolcafe_blue_line_today (NO school_id, NO day names)
-        self._attr_unique_id = f"schoolcafe_{line_clean}_{day_suffix}"
+        # Entity ID: sensor.schoolcafe_v2_blue_line_today (force new entities)
+        self._attr_unique_id = f"schoolcafe_v2_{line_clean}_{day_suffix}"
         
         # Friendly name based on day offset
         if day_offset == 0:
