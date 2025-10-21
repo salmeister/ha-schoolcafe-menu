@@ -148,7 +148,7 @@ class SchoolCafeMenuSensor(CoordinatorEntity, SensorEntity):
         school_id_short = api.school_id[:8]
         line_clean = menu_line.replace(" ", "_").lower()
         
-        # Create suffix based on day offset
+        # Create suffix based on day offset (purely numeric for predictability)
         if day_offset == 0:
             day_suffix = "today"
         elif day_offset == 1:
