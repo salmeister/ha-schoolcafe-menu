@@ -43,7 +43,7 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the SchoolCafe sensor platform."""
-    _LOGGER.warning("SCHOOLCAFE INTEGRATION v1.2.0: Setting up sensor platform - NEW CODE!")
+    _LOGGER.warning("SCHOOLCAFE INTEGRATION v1.3.0: Simplified sensor naming - NEW CODE!")
     _LOGGER.debug("Setting up SchoolCafe sensor platform")
 
     api: SchoolCafeAPI = hass.data[DOMAIN][config_entry.entry_id]
@@ -154,10 +154,10 @@ class SchoolCafeMenuSensor(CoordinatorEntity, SensorEntity):
         elif day_offset == 1:
             day_suffix = "tomorrow"
         else:
-            day_suffix = f"today_plus{day_offset}"
+            day_suffix = f"day{day_offset}"
             
-        # Entity ID: sensor.schoolcafe_fixed_blue_line_today (completely new pattern)
-        self._attr_unique_id = f"schoolcafe_fixed_{line_clean}_{day_suffix}"
+        # Entity ID: sensor.schoolcafe_blue_line_today (simple, clean pattern)
+        self._attr_unique_id = f"schoolcafe_{line_clean}_{day_suffix}"
         
         # Debug logging to verify this code is running
         _LOGGER.warning("SENSOR CREATION: Creating entity with ID: %s", self._attr_unique_id)

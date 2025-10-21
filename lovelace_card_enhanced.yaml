@@ -116,43 +116,43 @@ cards:
           {% endif %}
 
       # Day +2
-      - entity: sensor.schoolcafe_fixed_blue_line_today_plus2
+      - entity: sensor.schoolcafe_blue_line_day2
         name: >
           {{ (now().date() + timedelta(days=2)).strftime('%A %m/%d') }}
         icon: mdi:calendar-today
         secondary_info: >
-          {% if states('sensor.schoolcafe_fixed_blue_line_today_plus2') not in ['unavailable', 'unknown', 'No items available'] %}
-            🔵 {{ states('sensor.schoolcafe_fixed_blue_line_today_plus2') }}
-          {% elif states('sensor.schoolcafe_fixed_gold_line_today_plus2') not in ['unavailable', 'unknown', 'No items available'] %}
-            🟡 {{ states('sensor.schoolcafe_fixed_gold_line_today_plus2') }}
+          {% if states('sensor.schoolcafe_blue_line_day2') not in ['unavailable', 'unknown', 'No items available'] %}
+            🔵 {{ states('sensor.schoolcafe_blue_line_day2') }}
+          {% elif states('sensor.schoolcafe_gold_line_day2') not in ['unavailable', 'unknown', 'No items available'] %}
+            🟡 {{ states('sensor.schoolcafe_gold_line_day2') }}
           {% else %}
             No School
           {% endif %}
 
       # Day +3
-      - entity: sensor.schoolcafe_fixed_blue_line_today_plus3
+      - entity: sensor.schoolcafe_blue_line_day3
         name: >
           {{ (now().date() + timedelta(days=3)).strftime('%A %m/%d') }}
         icon: mdi:calendar-today
         secondary_info: >
-          {% if states('sensor.schoolcafe_fixed_blue_line_today_plus3') not in ['unavailable', 'unknown', 'No items available'] %}
-            🔵 {{ states('sensor.schoolcafe_fixed_blue_line_today_plus3') }}
-          {% elif states('sensor.schoolcafe_fixed_gold_line_today_plus3') not in ['unavailable', 'unknown', 'No items available'] %}
-            🟡 {{ states('sensor.schoolcafe_fixed_gold_line_today_plus3') }}
+          {% if states('sensor.schoolcafe_blue_line_day3') not in ['unavailable', 'unknown', 'No items available'] %}
+            🔵 {{ states('sensor.schoolcafe_blue_line_day3') }}
+          {% elif states('sensor.schoolcafe_gold_line_day3') not in ['unavailable', 'unknown', 'No items available'] %}
+            🟡 {{ states('sensor.schoolcafe_gold_line_day3') }}
           {% else %}
             No School
           {% endif %}
 
       # Day +4
-      - entity: sensor.schoolcafe_fixed_blue_line_today_plus4
+      - entity: sensor.schoolcafe_blue_line_day4
         name: >
           {{ (now().date() + timedelta(days=4)).strftime('%A %m/%d') }}
         icon: mdi:calendar-today
         secondary_info: >
-          {% if states('sensor.schoolcafe_fixed_blue_line_today_plus4') not in ['unavailable', 'unknown', 'No items available'] %}
-            🔵 {{ states('sensor.schoolcafe_fixed_blue_line_today_plus4') }}
-          {% elif states('sensor.schoolcafe_fixed_gold_line_today_plus4') not in ['unavailable', 'unknown', 'No items available'] %}
-            🟡 {{ states('sensor.schoolcafe_fixed_gold_line_today_plus4') }}
+          {% if states('sensor.schoolcafe_blue_line_day4') not in ['unavailable', 'unknown', 'No items available'] %}
+            🔵 {{ states('sensor.schoolcafe_blue_line_day4') }}
+          {% elif states('sensor.schoolcafe_gold_line_day4') not in ['unavailable', 'unknown', 'No items available'] %}
+            🟡 {{ states('sensor.schoolcafe_gold_line_day4') }}
           {% else %}
             No School
           {% endif %}
