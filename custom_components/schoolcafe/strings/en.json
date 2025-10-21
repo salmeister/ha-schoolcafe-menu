@@ -1,0 +1,52 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "SchoolCafe Menu Integration",
+        "description": "Set up your SchoolCafe menu integration. You'll need your School ID from the SchoolCafe system.",
+        "data": {
+          "school_id": "School ID",
+          "grade": "Grade",
+          "meal_type": "Meal Type",
+          "serving_line": "Serving Line",
+          "person_id": "Person ID (optional)"
+        }
+      },
+      "advanced": {
+        "title": "Advanced Options",
+        "description": "Configure advanced settings for your SchoolCafe integration.",
+        "data": {
+          "menu_lines": "Menu Lines (comma-separated)",
+          "days_to_fetch": "Days to Fetch",
+          "poll_interval": "Poll Interval (minutes)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to SchoolCafe API. Please check your School ID and try again.",
+      "invalid_school_id": "Invalid School ID format. Please check and try again.",
+      "invalid_menu_lines": "Invalid menu lines configuration. Please provide valid menu line names.",
+      "unknown": "Unexpected error occurred. Please try again."
+    },
+    "abort": {
+      "already_configured": "This School ID is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "SchoolCafe Menu Options",
+        "description": "Update your SchoolCafe menu integration settings.",
+        "data": {
+          "grade": "Grade",
+          "meal_type": "Meal Type", 
+          "serving_line": "Serving Line",
+          "person_id": "Person ID (optional)",
+          "menu_lines": "Menu Lines (comma-separated)",
+          "days_to_fetch": "Days to Fetch",
+          "poll_interval": "Poll Interval (minutes)"
+        }
+      }
+    }
+  }
+}
