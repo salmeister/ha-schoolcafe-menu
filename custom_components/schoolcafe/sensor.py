@@ -31,6 +31,7 @@ from .const import (
     ATTR_SERVING_SIZE,
     ATTR_INGREDIENTS,
     ATTR_NUTRITION,
+    ATTR_IS_WEEKDAY,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -146,7 +147,16 @@ class SchoolCafeMenuSensor(CoordinatorEntity, SensorEntity):
         # Generate unique ID and name
         school_id_short = api.school_id[:8]
         line_clean = menu_line.replace(" ", "_").lower()
-        self._attr_unique_id = f"schoolcafe_{school_id_short}_{line_clean}_day_{day_offset}"
+        
+        # Create suffix based on day offset
+        if day_offset == 0:
+            day_suffix = "today"
+        elif day_offset == 1:
+            day_suffix = "tomorrow"
+        else:
+            day_suffix = f"today_plus{day_offset}"
+            
+        self._attr_unique_id = f"schoolcafe_{line_clean}_{day_suffix}"
         
         # Friendly name based on day offset
         if day_offset == 0:
@@ -155,7 +165,7 @@ class SchoolCafeMenuSensor(CoordinatorEntity, SensorEntity):
             day_name = "Tomorrow"
         else:
             target_date = datetime.now().date() + timedelta(days=day_offset)
-            day_name = target_date.strftime("%A")
+            day_name = f"Today +{day_offset} ({target_date.strftime('%A')})"
         
         self._attr_name = f"SchoolCafe {menu_line} {day_name}"
         
@@ -193,10 +203,15 @@ class SchoolCafeMenuSensor(CoordinatorEntity, SensorEntity):
         menu_data = self.coordinator.data.get(self._date_key, {})
         menu_items = self._api.extract_menu_items_for_line(menu_data, self._menu_line)
         
+        # Calculate if this is a weekday (Monday=0, Sunday=6)
+        target_date = datetime.now().date() + timedelta(days=self._day_offset)
+        is_weekday = target_date.weekday() < 5  # Monday(0) through Friday(4)
+        
         attributes = {
             ATTR_SERVING_DATE: self._date_key,
             ATTR_CATEGORY: self._menu_line,
             ATTR_SERVING_LINE: self._api.serving_line,
+            ATTR_IS_WEEKDAY: is_weekday,
             "school_id": self._api.school_id,
             "grade": self._api.grade,
             "meal_type": self._api.meal_type,
