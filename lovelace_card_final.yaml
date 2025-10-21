@@ -1,0 +1,282 @@
+# Optimized SchoolCafe Menu Card
+# Based on actual sensor structure from screenshot
+
+type: grid
+title: 🍽️ PLHS Lunch Menu
+square: false
+columns: 1
+cards:
+  # Today (only show on weekdays)
+  - type: conditional
+    conditions:
+      - condition: template
+        value_template: >
+          {% set today = now().weekday() %}
+          {{ today < 5 }}
+    card:
+      type: entities
+      entities:
+        - entity: sensor.date
+          name: >
+            {{ now().strftime('%A') }}
+          icon: " "
+          style: |
+            :host {
+              margin: auto;
+              font-size: 18px;
+              font-weight: bold;
+            }
+        - entity: sensor.date
+          name: >
+            {{ now().strftime('%B %d, %Y') }}
+          icon: " "
+          style: |
+            :host {
+              margin: auto;
+              font-size: 16px;
+            }
+        # Show menu if available, otherwise "No School"
+        - type: conditional
+          conditions:
+            - condition: template
+              value_template: >
+                {{ states('sensor.schoolcafe_blue_line_today') not in ['unavailable', 'unknown', 'No items available'] or
+                   states('sensor.schoolcafe_gold_line_today') not in ['unavailable', 'unknown', 'No items available'] }}
+          row:
+            entity: sensor.schoolcafe_blue_line_today
+            name: "PLHS"
+            secondary_info: >
+              {% set blue = states('sensor.schoolcafe_blue_line_today') %}
+              {% set gold = states('sensor.schoolcafe_gold_line_today') %}
+              {% if blue not in ['unavailable', 'unknown', 'No items available'] %}
+              🔵 {{ blue }}{% endif %}{% if gold not in ['unavailable', 'unknown', 'No items available'] %}
+              🟡 {{ gold }}{% endif %}
+        - type: conditional
+          conditions:
+            - condition: template
+              value_template: >
+                {{ states('sensor.schoolcafe_blue_line_today') in ['unavailable', 'unknown', 'No items available'] and
+                   states('sensor.schoolcafe_gold_line_today') in ['unavailable', 'unknown', 'No items available'] }}
+          row:
+            type: section
+            label: "🏫 PLHS - No School"
+
+  # Tomorrow (only show on weekdays)
+  - type: conditional
+    conditions:
+      - condition: template
+        value_template: >
+          {% set tomorrow = (now() + timedelta(days=1)).weekday() %}
+          {{ tomorrow < 5 }}
+    card:
+      type: entities
+      entities:
+        - entity: sensor.date
+          name: >
+            {{ (now() + timedelta(days=1)).strftime('%A') }}
+          icon: " "
+          style: |
+            :host {
+              margin: auto;
+              font-size: 18px;
+              font-weight: bold;
+            }
+        - entity: sensor.date
+          name: >
+            {{ (now() + timedelta(days=1)).strftime('%B %d, %Y') }}
+          icon: " "
+          style: |
+            :host {
+              margin: auto;
+              font-size: 16px;
+            }
+        - type: conditional
+          conditions:
+            - condition: template
+              value_template: >
+                {{ states('sensor.schoolcafe_blue_line_tomorrow') not in ['unavailable', 'unknown', 'No items available'] or
+                   states('sensor.schoolcafe_gold_line_tomorrow') not in ['unavailable', 'unknown', 'No items available'] }}
+          row:
+            entity: sensor.schoolcafe_blue_line_tomorrow
+            name: "PLHS"
+            secondary_info: >
+              {% set blue = states('sensor.schoolcafe_blue_line_tomorrow') %}
+              {% set gold = states('sensor.schoolcafe_gold_line_tomorrow') %}
+              {% if blue not in ['unavailable', 'unknown', 'No items available'] %}
+              🔵 {{ blue }}{% endif %}{% if gold not in ['unavailable', 'unknown', 'No items available'] %}
+              🟡 {{ gold }}{% endif %}
+        - type: conditional
+          conditions:
+            - condition: template
+              value_template: >
+                {{ states('sensor.schoolcafe_blue_line_tomorrow') in ['unavailable', 'unknown', 'No items available'] and
+                   states('sensor.schoolcafe_gold_line_tomorrow') in ['unavailable', 'unknown', 'No items available'] }}
+          row:
+            type: section
+            label: "🏫 PLHS - No School"
+
+  # Day 2 (Wednesday if today is Monday, etc.)
+  - type: conditional
+    conditions:
+      - condition: template
+        value_template: >
+          {% set day2 = (now() + timedelta(days=2)).weekday() %}
+          {{ day2 < 5 }}
+    card:
+      type: entities
+      entities:
+        - entity: sensor.date
+          name: >
+            {{ (now() + timedelta(days=2)).strftime('%A') }}
+          icon: " "
+          style: |
+            :host {
+              margin: auto;
+              font-size: 18px;
+              font-weight: bold;
+            }
+        - entity: sensor.date
+          name: >
+            {{ (now() + timedelta(days=2)).strftime('%B %d, %Y') }}
+          icon: " "
+          style: |
+            :host {
+              margin: auto;
+              font-size: 16px;
+            }
+        # Note: Adjust sensor names based on your actual entity IDs
+        # The integration creates sensors with day_offset pattern
+        - type: conditional
+          conditions:
+            - condition: template
+              value_template: >
+                {% set blue_entity = 'sensor.schoolcafe_blue_line_day_2' %}
+                {% set gold_entity = 'sensor.schoolcafe_gold_line_day_2' %}
+                {{ states(blue_entity) not in ['unavailable', 'unknown', 'No items available'] or
+                   states(gold_entity) not in ['unavailable', 'unknown', 'No items available'] }}
+          row:
+            entity: sensor.schoolcafe_blue_line_day_2
+            name: "PLHS"
+            secondary_info: >
+              {% set blue = states('sensor.schoolcafe_blue_line_day_2') %}
+              {% set gold = states('sensor.schoolcafe_gold_line_day_2') %}
+              {% if blue not in ['unavailable', 'unknown', 'No items available'] %}
+              🔵 {{ blue }}{% endif %}{% if gold not in ['unavailable', 'unknown', 'No items available'] %}
+              🟡 {{ gold }}{% endif %}
+        - type: conditional
+          conditions:
+            - condition: template
+              value_template: >
+                {{ states('sensor.schoolcafe_blue_line_day_2') in ['unavailable', 'unknown', 'No items available'] and
+                   states('sensor.schoolcafe_gold_line_day_2') in ['unavailable', 'unknown', 'No items available'] }}
+          row:
+            type: section
+            label: "🏫 PLHS - No School"
+
+  # Day 3
+  - type: conditional
+    conditions:
+      - condition: template
+        value_template: >
+          {% set day3 = (now() + timedelta(days=3)).weekday() %}
+          {{ day3 < 5 }}
+    card:
+      type: entities
+      entities:
+        - entity: sensor.date
+          name: >
+            {{ (now() + timedelta(days=3)).strftime('%A') }}
+          icon: " "
+          style: |
+            :host {
+              margin: auto;
+              font-size: 18px;
+              font-weight: bold;
+            }
+        - entity: sensor.date
+          name: >
+            {{ (now() + timedelta(days=3)).strftime('%B %d, %Y') }}
+          icon: " "
+          style: |
+            :host {
+              margin: auto;
+              font-size: 16px;
+            }
+        - type: conditional
+          conditions:
+            - condition: template
+              value_template: >
+                {{ states('sensor.schoolcafe_blue_line_day_3') not in ['unavailable', 'unknown', 'No items available'] or
+                   states('sensor.schoolcafe_gold_line_day_3') not in ['unavailable', 'unknown', 'No items available'] }}
+          row:
+            entity: sensor.schoolcafe_blue_line_day_3
+            name: "PLHS"
+            secondary_info: >
+              {% set blue = states('sensor.schoolcafe_blue_line_day_3') %}
+              {% set gold = states('sensor.schoolcafe_gold_line_day_3') %}
+              {% if blue not in ['unavailable', 'unknown', 'No items available'] %}
+              🔵 {{ blue }}{% endif %}{% if gold not in ['unavailable', 'unknown', 'No items available'] %}
+              🟡 {{ gold }}{% endif %}
+        - type: conditional
+          conditions:
+            - condition: template
+              value_template: >
+                {{ states('sensor.schoolcafe_blue_line_day_3') in ['unavailable', 'unknown', 'No items available'] and
+                   states('sensor.schoolcafe_gold_line_day_3') in ['unavailable', 'unknown', 'No items available'] }}
+          row:
+            type: section
+            label: "🏫 PLHS - No School"
+
+  # Day 4
+  - type: conditional
+    conditions:
+      - condition: template
+        value_template: >
+          {% set day4 = (now() + timedelta(days=4)).weekday() %}
+          {{ day4 < 5 }}
+    card:
+      type: entities
+      entities:
+        - entity: sensor.date
+          name: >
+            {{ (now() + timedelta(days=4)).strftime('%A') }}
+          icon: " "
+          style: |
+            :host {
+              margin: auto;
+              font-size: 18px;
+              font-weight: bold;
+            }
+        - entity: sensor.date
+          name: >
+            {{ (now() + timedelta(days=4)).strftime('%B %d, %Y') }}
+          icon: " "
+          style: |
+            :host {
+              margin: auto;
+              font-size: 16px;
+            }
+        - type: conditional
+          conditions:
+            - condition: template
+              value_template: >
+                {{ states('sensor.schoolcafe_blue_line_day_4') not in ['unavailable', 'unknown', 'No items available'] or
+                   states('sensor.schoolcafe_gold_line_day_4') not in ['unavailable', 'unknown', 'No items available'] }}
+          row:
+            entity: sensor.schoolcafe_blue_line_day_4
+            name: "PLHS"
+            secondary_info: >
+              {% set blue = states('sensor.schoolcafe_blue_line_day_4') %}
+              {% set gold = states('sensor.schoolcafe_gold_line_day_4') %}
+              {% if blue not in ['unavailable', 'unknown', 'No items available'] %}
+              🔵 {{ blue }}{% endif %}{% if gold not in ['unavailable', 'unknown', 'No items available'] %}
+              🟡 {{ gold }}{% endif %}
+        - type: conditional
+          conditions:
+            - condition: template
+              value_template: >
+                {{ states('sensor.schoolcafe_blue_line_day_4') in ['unavailable', 'unknown', 'No items available'] and
+                   states('sensor.schoolcafe_gold_line_day_4') in ['unavailable', 'unknown', 'No items available'] }}
+          row:
+            type: section
+            label: "🏫 PLHS - No School"

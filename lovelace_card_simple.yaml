@@ -1,0 +1,262 @@
+# Simple SchoolCafe Menu Card - Direct Replacement
+# This maintains your current grid layout but uses new sensors
+
+type: grid
+title: 🍽️ Lunch Menu
+square: false
+columns: 1
+cards:
+  # Today
+  - type: conditional
+    conditions:
+      - condition: template
+        value_template: >
+          {% set today = now().weekday() %}
+          {{ today < 5 }}
+    card:
+      type: entities
+      entities:
+        - entity: sensor.date
+          name: >
+            {{ now().strftime('%A') }}
+          icon: " "
+          style: |
+            :host {
+              margin: auto;
+              font-size: 18px;
+            }
+        - entity: sensor.date
+          name: >
+            {{ now().strftime('%B %d, %Y') }}
+          icon: " "
+          style: |
+            :host {
+              margin: auto;
+              font-size: 18px;
+            }
+        - type: conditional
+          conditions:
+            - condition: template
+              value_template: >
+                {{ states('sensor.schoolcafe_blue_line_today') != 'No items available' or
+                   states('sensor.schoolcafe_gold_line_today') != 'No items available' }}
+          row:
+            entity: sensor.schoolcafe_blue_line_today
+            name: "PLHS"
+            secondary_info: >
+              🔵 {{ states('sensor.schoolcafe_blue_line_today') }}
+              🟡 {{ states('sensor.schoolcafe_gold_line_today') }}
+        - type: conditional
+          conditions:
+            - condition: template
+              value_template: >
+                {{ states('sensor.schoolcafe_blue_line_today') == 'No items available' and
+                   states('sensor.schoolcafe_gold_line_today') == 'No items available' }}
+          row:
+            entity: sensor.date
+            name: "PLHS - No School"
+            icon: mdi:school-off
+
+  # Tomorrow
+  - type: conditional
+    conditions:
+      - condition: template
+        value_template: >
+          {% set tomorrow = (now() + timedelta(days=1)).weekday() %}
+          {{ tomorrow < 5 }}
+    card:
+      type: entities
+      entities:
+        - entity: sensor.date
+          name: >
+            {{ (now() + timedelta(days=1)).strftime('%A') }}
+          icon: " "
+          style: |
+            :host {
+              margin: auto;
+              font-size: 18px;
+            }
+        - entity: sensor.date
+          name: >
+            {{ (now() + timedelta(days=1)).strftime('%B %d, %Y') }}
+          icon: " "
+          style: |
+            :host {
+              margin: auto;
+              font-size: 18px;
+            }
+        - type: conditional
+          conditions:
+            - condition: template
+              value_template: >
+                {{ states('sensor.schoolcafe_blue_line_tomorrow') != 'No items available' or
+                   states('sensor.schoolcafe_gold_line_tomorrow') != 'No items available' }}
+          row:
+            entity: sensor.schoolcafe_blue_line_tomorrow
+            name: "PLHS"
+            secondary_info: >
+              🔵 {{ states('sensor.schoolcafe_blue_line_tomorrow') }}
+              🟡 {{ states('sensor.schoolcafe_gold_line_tomorrow') }}
+        - type: conditional
+          conditions:
+            - condition: template
+              value_template: >
+                {{ states('sensor.schoolcafe_blue_line_tomorrow') == 'No items available' and
+                   states('sensor.schoolcafe_gold_line_tomorrow') == 'No items available' }}
+          row:
+            entity: sensor.date
+            name: "PLHS - No School"
+            icon: mdi:school-off
+
+  # Day 2
+  - type: conditional
+    conditions:
+      - condition: template
+        value_template: >
+          {% set day2 = (now() + timedelta(days=2)).weekday() %}
+          {{ day2 < 5 }}
+    card:
+      type: entities
+      entities:
+        - entity: sensor.date
+          name: >
+            {{ (now() + timedelta(days=2)).strftime('%A') }}
+          icon: " "
+          style: |
+            :host {
+              margin: auto;
+              font-size: 18px;
+            }
+        - entity: sensor.date
+          name: >
+            {{ (now() + timedelta(days=2)).strftime('%B %d, %Y') }}
+          icon: " "
+          style: |
+            :host {
+              margin: auto;
+              font-size: 18px;
+            }
+        - type: conditional
+          conditions:
+            - condition: template
+              value_template: >
+                {{ states('sensor.schoolcafe_blue_line_day_2') != 'No items available' or
+                   states('sensor.schoolcafe_gold_line_day_2') != 'No items available' }}
+          row:
+            entity: sensor.schoolcafe_blue_line_day_2
+            name: "PLHS"
+            secondary_info: >
+              🔵 {{ states('sensor.schoolcafe_blue_line_day_2') }}
+              🟡 {{ states('sensor.schoolcafe_gold_line_day_2') }}
+        - type: conditional
+          conditions:
+            - condition: template
+              value_template: >
+                {{ states('sensor.schoolcafe_blue_line_day_2') == 'No items available' and
+                   states('sensor.schoolcafe_gold_line_day_2') == 'No items available' }}
+          row:
+            entity: sensor.date
+            name: "PLHS - No School"
+            icon: mdi:school-off
+
+  # Day 3
+  - type: conditional
+    conditions:
+      - condition: template
+        value_template: >
+          {% set day3 = (now() + timedelta(days=3)).weekday() %}
+          {{ day3 < 5 }}
+    card:
+      type: entities
+      entities:
+        - entity: sensor.date
+          name: >
+            {{ (now() + timedelta(days=3)).strftime('%A') }}
+          icon: " "
+          style: |
+            :host {
+              margin: auto;
+              font-size: 18px;
+            }
+        - entity: sensor.date
+          name: >
+            {{ (now() + timedelta(days=3)).strftime('%B %d, %Y') }}
+          icon: " "
+          style: |
+            :host {
+              margin: auto;
+              font-size: 18px;
+            }
+        - type: conditional
+          conditions:
+            - condition: template
+              value_template: >
+                {{ states('sensor.schoolcafe_blue_line_day_3') != 'No items available' or
+                   states('sensor.schoolcafe_gold_line_day_3') != 'No items available' }}
+          row:
+            entity: sensor.schoolcafe_blue_line_day_3
+            name: "PLHS"
+            secondary_info: >
+              🔵 {{ states('sensor.schoolcafe_blue_line_day_3') }}
+              🟡 {{ states('sensor.schoolcafe_gold_line_day_3') }}
+        - type: conditional
+          conditions:
+            - condition: template
+              value_template: >
+                {{ states('sensor.schoolcafe_blue_line_day_3') == 'No items available' and
+                   states('sensor.schoolcafe_gold_line_day_3') == 'No items available' }}
+          row:
+            entity: sensor.date
+            name: "PLHS - No School"
+            icon: mdi:school-off
+
+  # Day 4
+  - type: conditional
+    conditions:
+      - condition: template
+        value_template: >
+          {% set day4 = (now() + timedelta(days=4)).weekday() %}
+          {{ day4 < 5 }}
+    card:
+      type: entities
+      entities:
+        - entity: sensor.date
+          name: >
+            {{ (now() + timedelta(days=4)).strftime('%A') }}
+          icon: " "
+          style: |
+            :host {
+              margin: auto;
+              font-size: 18px;
+            }
+        - entity: sensor.date
+          name: >
+            {{ (now() + timedelta(days=4)).strftime('%B %d, %Y') }}
+          icon: " "
+          style: |
+            :host {
+              margin: auto;
+              font-size: 18px;
+            }
+        - type: conditional
+          conditions:
+            - condition: template
+              value_template: >
+                {{ states('sensor.schoolcafe_blue_line_day_4') != 'No items available' or
+                   states('sensor.schoolcafe_gold_line_day_4') != 'No items available' }}
+          row:
+            entity: sensor.schoolcafe_blue_line_day_4
+            name: "PLHS"
+            secondary_info: >
+              🔵 {{ states('sensor.schoolcafe_blue_line_day_4') }}
+              🟡 {{ states('sensor.schoolcafe_gold_line_day_4') }}
+        - type: conditional
+          conditions:
+            - condition: template
+              value_template: >
+                {{ states('sensor.schoolcafe_blue_line_day_4') == 'No items available' and
+                   states('sensor.schoolcafe_gold_line_day_4') == 'No items available' }}
+          row:
+            entity: sensor.date
+            name: "PLHS - No School"
+            icon: mdi:school-off
