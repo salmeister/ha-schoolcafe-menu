@@ -144,8 +144,7 @@ class SchoolCafeMenuSensor(CoordinatorEntity, SensorEntity):
         self._day_offset = day_offset
         self._date_key = date_key
         
-        # Generate unique ID and name
-        school_id_short = api.school_id[:8]
+        # Generate unique ID and name - NO DAY NAMES EVER!
         line_clean = menu_line.replace(" ", "_").lower()
         
         # Create suffix based on day offset (purely numeric for predictability)
@@ -156,6 +155,7 @@ class SchoolCafeMenuSensor(CoordinatorEntity, SensorEntity):
         else:
             day_suffix = f"today_plus{day_offset}"
             
+        # Entity ID: sensor.schoolcafe_blue_line_today (NO school_id, NO day names)
         self._attr_unique_id = f"schoolcafe_{line_clean}_{day_suffix}"
         
         # Friendly name based on day offset
