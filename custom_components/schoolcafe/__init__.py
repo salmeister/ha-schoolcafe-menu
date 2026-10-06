@@ -21,9 +21,16 @@ _LOGGER = logging.getLogger(__name__)
 PLATFORMS: list[Platform] = [Platform.SENSOR]
 
 
+def _combined_config(entry: ConfigEntry) -> dict:
+    """Merge entry data with options. Options win when both are set."""
+    combined = dict(entry.data)
+    combined.update(entry.options)
+    return combined
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up SchoolCafe from a config entry."""
-    config = entry.data
+    config = _combined_config(entry)
 
     # Validate required configuration
     required_fields = ["school_id"]
@@ -38,10 +45,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         school_id=config["school_id"],
         grade=config.get("grade", "09"),
         meal_type=config.get("meal_type", "Lunch"),
-        serving_line=config.get("serving_line", "Main Lines"),
+        serving_line=config.get("serving_line", "Main Line"),
         person_id=config.get("person_id"),
         menu_lines=config.get("menu_lines", ["BLUE LINE", "GOLD LINE"]),
         days_to_fetch=config.get("days_to_fetch", 7),
+        view_id=config.get("view_id"),
+        menu_url=config.get("menu_url"),
+        school_name=config.get("school_name"),
     )
 
     # Test the connection
@@ -57,10 +67,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = api
 
+    entry.async_on_unload(entry.add_update_listener(async_reload_entry))
+
     # Set up platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     
     return True
+
+
+async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Reload the integration when options change."""
+    await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

@@ -3,9 +3,9 @@
     "step": {
       "user": {
         "title": "SchoolCafe Menu Integration",
-        "description": "Set up your SchoolCafe menu integration. You'll need your School ID from the SchoolCafe system.",
+        "description": "Paste your school's public guest menu URL (the link that contains viewID), or a School ID.",
         "data": {
-          "school_id": "School ID",
+          "school_id": "School ID or public menu URL",
           "grade": "Grade",
           "meal_type": "Meal Type",
           "serving_line": "Serving Line",
@@ -24,7 +24,7 @@
     },
     "error": {
       "cannot_connect": "Failed to connect to SchoolCafe API. Please check your School ID and try again.",
-      "invalid_school_id": "Invalid School ID format. Please check and try again.",
+      "invalid_school_id": "That public menu URL did not resolve to a school. Paste the full guest link, including viewID.",
       "invalid_menu_lines": "Invalid menu lines configuration. Please provide valid menu line names.",
       "unknown": "Unexpected error occurred. Please try again."
     },
@@ -36,8 +36,9 @@
     "step": {
       "init": {
         "title": "SchoolCafe Menu Options",
-        "description": "Update your SchoolCafe menu integration settings.",
+        "description": "Update your SchoolCafe menu settings. If menus say there is no school, paste the public guest menu URL.",
         "data": {
+          "school_id": "School ID or public menu URL",
           "grade": "Grade",
           "meal_type": "Meal Type", 
           "serving_line": "Serving Line",
@@ -45,6 +46,12 @@
           "menu_lines": "Menu Lines (comma-separated)",
           "days_to_fetch": "Days to Fetch (1-30)",
           "poll_interval": "Update Interval (minutes, 15-1440)"
+        },
+        "error": {
+          "cannot_connect": "Failed to connect to SchoolCafe. Check the public menu URL and try again.",
+          "invalid_school_id": "That public menu URL did not resolve to a school. Copy the full guest link, including viewID.",
+          "already_configured": "This school is already configured.",
+          "unknown": "Unexpected error occurred. Please try again."
         }
       }
     }

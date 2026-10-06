@@ -10,10 +10,13 @@ from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError
 
-from .api import SchoolCafeAPI, SchoolCafeAPIError
+from .api import SchoolCafeAPI, SchoolCafeAPIError, looks_like_public_menu
 from .const import (
     DOMAIN,
     CONF_SCHOOL_ID,
+    CONF_SCHOOL_NAME,
+    CONF_VIEW_ID,
+    CONF_MENU_URL,
     CONF_GRADE,
     CONF_MEAL_TYPE,
     CONF_SERVING_LINE,
@@ -56,6 +59,35 @@ STEP_ADVANCED_DATA_SCHEMA = vol.Schema(
 )
 
 
+async def apply_public_menu(data: Dict[str, Any]) -> Dict[str, Any]:
+    """Resolve a guest menu URL into a school id. Bare school ids pass through."""
+    identifier = str(data.get(CONF_SCHOOL_ID, "")).strip()
+    if not looks_like_public_menu(identifier):
+        data[CONF_SCHOOL_ID] = identifier
+        return data
+
+    resolved = await SchoolCafeAPI.resolve_public_menu(identifier)
+    if not resolved:
+        raise InvalidSchoolId
+
+    updated = data.copy()
+    updated[CONF_MENU_URL] = resolved["menu_url"]
+    updated[CONF_VIEW_ID] = resolved["view_id"]
+    updated[CONF_SCHOOL_ID] = resolved["school_id"]
+    if resolved.get("school_name"):
+        updated[CONF_SCHOOL_NAME] = resolved["school_name"]
+
+    # Keep an explicit grade, meal, or line. Replace only the form defaults.
+    if resolved.get("grade") and data.get(CONF_GRADE, DEFAULT_GRADE) == DEFAULT_GRADE:
+        updated[CONF_GRADE] = resolved["grade"]
+    if resolved.get("meal_type") and data.get(CONF_MEAL_TYPE, DEFAULT_MEAL_TYPE) == DEFAULT_MEAL_TYPE:
+        updated[CONF_MEAL_TYPE] = resolved["meal_type"]
+    current_line = (data.get(CONF_SERVING_LINE) or DEFAULT_SERVING_LINE).strip().lower()
+    if resolved.get("serving_line") and current_line in {DEFAULT_SERVING_LINE.lower(), "main lines"}:
+        updated[CONF_SERVING_LINE] = resolved["serving_line"]
+    return updated
+
+
 async def validate_input(hass: HomeAssistant, data: Dict[str, Any]) -> Dict[str, Any]:
     """Validate the user input allows us to connect.
 
@@ -76,6 +108,9 @@ async def validate_input(hass: HomeAssistant, data: Dict[str, Any]) -> Dict[str,
         person_id=data.get(CONF_PERSON_ID),
         menu_lines=menu_lines,
         days_to_fetch=data.get(CONF_DAYS_TO_FETCH, DEFAULT_DAYS_TO_FETCH),
+        view_id=data.get(CONF_VIEW_ID) or None,
+        menu_url=data.get(CONF_MENU_URL) or None,
+        school_name=data.get(CONF_SCHOOL_NAME) or None,
     )
 
     try:
@@ -92,8 +127,9 @@ async def validate_input(hass: HomeAssistant, data: Dict[str, Any]) -> Dict[str,
     # Return processed data
     processed_data = data.copy()
     processed_data[CONF_MENU_LINES] = menu_lines
+    title = data.get(CONF_SCHOOL_NAME) or f"SchoolCafe ({data[CONF_SCHOOL_ID][:8]}...)"
     
-    return {"title": f"SchoolCafe ({data[CONF_SCHOOL_ID][:8]}...)", "data": processed_data}
+    return {"title": title, "data": processed_data}
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -113,20 +149,21 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             try:
-                # Store user input for the next step
+                user_input = await apply_public_menu(user_input)
                 self._user_input.update(user_input)
-                
-                # Check if this school_id is already configured
+
                 await self.async_set_unique_id(user_input[CONF_SCHOOL_ID])
                 self._abort_if_unique_id_configured()
-                
-                # Move to advanced options step
+
                 return await self.async_step_advanced()
-                
+
             except CannotConnect:
                 errors["base"] = "cannot_connect"
             except InvalidSchoolId:
                 errors[CONF_SCHOOL_ID] = "invalid_school_id"
+            except SchoolCafeAPIError as err:
+                _LOGGER.error("Cannot resolve SchoolCafe menu link: %s", err)
+                errors["base"] = "cannot_connect"
             except Exception:  # pylint: disable=broad-except
                 _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
@@ -194,28 +231,60 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         if user_input is not None:
             try:
-                # Process menu lines from comma-separated string to list
                 menu_lines_str = user_input.get(CONF_MENU_LINES, ", ".join(DEFAULT_MENU_LINES))
                 menu_lines = [line.strip().upper() for line in menu_lines_str.split(",") if line.strip()]
-                
                 if not menu_lines:
                     menu_lines = DEFAULT_MENU_LINES
-                
-                # Update the processed menu lines
                 user_input[CONF_MENU_LINES] = menu_lines
-                
-                return self.async_create_entry(title="", data=user_input)
-                
+
+                identifier = str(user_input.get(CONF_SCHOOL_ID, "")).strip()
+                if looks_like_public_menu(identifier):
+                    user_input = await apply_public_menu(user_input)
+                else:
+                    user_input[CONF_SCHOOL_ID] = identifier
+                    user_input[CONF_VIEW_ID] = ""
+                    user_input[CONF_MENU_URL] = ""
+                    user_input[CONF_SCHOOL_NAME] = ""
+
+                new_school_id = user_input[CONF_SCHOOL_ID]
+                for entry in self.hass.config_entries.async_entries(DOMAIN):
+                    if entry.entry_id != self.config_entry.entry_id and entry.unique_id == new_school_id:
+                        errors["base"] = "already_configured"
+                        break
+                else:
+                    title = user_input.get(CONF_SCHOOL_NAME) or self.config_entry.title
+                    self.hass.config_entries.async_update_entry(
+                        self.config_entry,
+                        unique_id=new_school_id,
+                        title=title,
+                        data={**self.config_entry.data, **user_input},
+                    )
+                    return self.async_create_entry(title="", data=user_input)
+
+            except InvalidSchoolId:
+                errors[CONF_SCHOOL_ID] = "invalid_school_id"
+            except SchoolCafeAPIError as err:
+                _LOGGER.error("Cannot resolve SchoolCafe menu link: %s", err)
+                errors["base"] = "cannot_connect"
             except Exception:  # pylint: disable=broad-except
                 _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
 
-        # Get current config values
-        current_config = self.config_entry.data
-        menu_lines_str = ", ".join(current_config.get(CONF_MENU_LINES, DEFAULT_MENU_LINES))
+        # Get current config values, preferring previously saved options
+        current_config = {**self.config_entry.data, **self.config_entry.options}
+        menu_lines = current_config.get(CONF_MENU_LINES, DEFAULT_MENU_LINES)
+        if isinstance(menu_lines, str):
+            menu_lines_str = menu_lines
+        else:
+            menu_lines_str = ", ".join(menu_lines)
+        school_identifier = current_config.get(CONF_MENU_URL) or current_config.get(CONF_SCHOOL_ID, "")
         
         options_schema = vol.Schema(
             {
+                vol.Optional(
+                    CONF_SCHOOL_ID,
+                    default=school_identifier,
+                ): str,
                 vol.Optional(
                     CONF_GRADE,
                     default=current_config.get(CONF_GRADE, DEFAULT_GRADE)

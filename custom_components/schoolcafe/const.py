@@ -4,6 +4,9 @@ DOMAIN = "schoolcafe_menu"
 
 # Configuration keys
 CONF_SCHOOL_ID = "school_id"
+CONF_SCHOOL_NAME = "school_name"
+CONF_VIEW_ID = "view_id"
+CONF_MENU_URL = "menu_url"
 CONF_GRADE = "grade"
 CONF_MEAL_TYPE = "meal_type"
 CONF_SERVING_LINE = "serving_line"
@@ -15,7 +18,7 @@ CONF_POLL_INTERVAL = "poll_interval"
 # Default values
 DEFAULT_GRADE = "09"
 DEFAULT_MEAL_TYPE = "Lunch"
-DEFAULT_SERVING_LINE = "Main Lines"
+DEFAULT_SERVING_LINE = "Main Line"
 DEFAULT_PERSON_ID = None
 DEFAULT_MENU_LINES = ["BLUE LINE", "GOLD LINE"]
 DEFAULT_DAYS_TO_FETCH = 7

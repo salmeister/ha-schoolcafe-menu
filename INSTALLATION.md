@@ -43,12 +43,12 @@ Restart Home Assistant to load the new integration.
 Fill in the configuration form:
 
 **Required:**
-- **School ID**: `ef44acd3-63cb-6c9e-840a-80ed1ef89779` (your current ID)
+- **School ID**: paste the public guest menu URL, `https://www.schoolcafe.com/PriorLake/menus?viewID=e73b1a29-a925-4fce-879b-0747773b891d`
 
 **Optional (with your current defaults):**
 - **Grade**: `09`
 - **Meal Type**: `Lunch`
-- **Serving Line**: `Main Lines`
+- **Serving Line**: `Main Line`
 - **Person ID**: (leave empty)
 
 **Advanced Options:**

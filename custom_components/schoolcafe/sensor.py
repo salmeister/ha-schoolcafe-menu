@@ -43,7 +43,6 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the SchoolCafe sensor platform."""
-    _LOGGER.warning("SCHOOLCAFE INTEGRATION v1.4.0: NEW DOMAIN schoolcafe_menu - COMPLETE RESET!")
     _LOGGER.debug("Setting up SchoolCafe sensor platform")
 
     api: SchoolCafeAPI = hass.data[DOMAIN][config_entry.entry_id]
@@ -156,11 +155,11 @@ class SchoolCafeMenuSensor(CoordinatorEntity, SensorEntity):
         else:
             day_suffix = f"day{day_offset}"
             
-        # Entity ID: sensor.schoolcafe_menu_blue_line_today (new domain, clean pattern)
+        # unique_id stays stable. entity_id follows the name: sensor.schoolcafe_blue_line_today
         self._attr_unique_id = f"schoolcafe_menu_{line_clean}_{day_suffix}"
+        self._attr_suggested_object_id = f"schoolcafe_{line_clean}_{day_suffix}"
         
-        # Debug logging to verify this code is running
-        _LOGGER.warning("SENSOR CREATION: Creating entity with ID: %s", self._attr_unique_id)
+        _LOGGER.debug("Creating SchoolCafe entity %s", self._attr_unique_id)
         
         # Friendly name based on day offset
         if day_offset == 0:
@@ -244,14 +243,15 @@ class SchoolCafeMenuSensor(CoordinatorEntity, SensorEntity):
     @property
     def device_info(self) -> Dict[str, Any]:
         """Return device information."""
-        school_id_short = self._api.school_id[:8]
+        identifier = self._api.view_id or self._api.school_id
+        name = self._api.school_name or f"SchoolCafe Menu ({self._api.school_id[:8]}...)"
         
         return {
-            "identifiers": {(DOMAIN, f"schoolcafe_{self._api.school_id}")},
-            "name": f"SchoolCafe Menu ({school_id_short}...)",
+            "identifiers": {(DOMAIN, f"schoolcafe_{identifier}")},
+            "name": name,
             "manufacturer": "SchoolCafe",
             "model": "Menu Service",
-            "configuration_url": "https://webapis.schoolcafe.com",
+            "configuration_url": self._api.menu_url or "https://www.schoolcafe.com/menus",
         }
 
     async def async_added_to_hass(self) -> None:

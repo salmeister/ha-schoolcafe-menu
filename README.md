@@ -32,13 +32,13 @@ A custom Home Assistant integration that connects to the SchoolCafe API to retri
 
 ### Required Settings
 
-- **School ID**: Your school's unique identifier (e.g., `ef44acd3-63cb-6c9e-840a-80ed1ef89779`)
+- **School ID or public menu URL**: The guest menu link from SchoolCafe (it contains `viewID`), or a school id. Example: `https://www.schoolcafe.com/PriorLake/menus?viewID=e73b1a29-a925-4fce-879b-0747773b891d`
 
 ### Optional Settings
 
 - **Grade**: Student grade level (default: `09`)
 - **Meal Type**: Type of meal (default: `Lunch`)
-- **Serving Line**: Which serving line (default: `Main Lines`)
+- **Serving Line**: Which serving line (default: `Main Line`). Several lines can be joined with `~`.
 - **Person ID**: Optional person identifier (default: `null`)
 
 ### Advanced Settings
@@ -47,21 +47,23 @@ A custom Home Assistant integration that connects to the SchoolCafe API to retri
 - **Days to Fetch**: Number of days ahead to retrieve (1-30, default: `7`)
 - **Poll Interval**: How often to update data in minutes (15-1440, default: `60`)
 
-## Finding Your School ID
+## Finding Your School
 
-To find your School ID:
+SchoolCafe now publishes a public guest link for each school. Paste that whole URL into the School ID field.
 
-1. Go to your school's SchoolCafe website
-2. Open browser developer tools (F12)
-3. Go to the Network tab
-4. Navigate to the menu page
-5. Look for API calls to `webapis.schoolcafe.com`
-6. Find the `SchoolId` parameter in the URL
+1. Open your school's menu as a guest
+2. Copy the address bar URL. It looks like `https://www.schoolcafe.com/YourDistrict/menus?viewID=...`
+3. Paste that URL into the integration
 
-Example API URL:
+The integration reads `viewID` and asks SchoolCafe which school, grade, meal, and serving lines that link uses. School ids can change; the guest link keeps working.
+
+Prior Lake High School:
+
 ```
-https://webapis.schoolcafe.com/api/CalendarView/GetDailyMenuitemsByGrade?SchoolId=ef44acd3-63cb-6c9e-840a-80ed1ef89779&...
+https://www.schoolcafe.com/PriorLake/menus?viewID=e73b1a29-a925-4fce-879b-0747773b891d
 ```
+
+That link currently resolves to school id `ef44acd3-63cb-4d3b-828e-80ed1ef89779`. The older id `ef44acd3-63cb-6c9e-840a-80ed1ef89779` no longer returns a menu. Serving line `Main Lines` is also empty; the published name is `Main Line`.
 
 ## Sensor Entities
 
@@ -165,10 +167,11 @@ Make sure to update the `school_id` in the test script with your actual School I
 - Check that your school uses the SchoolCafe system
 - Ensure Home Assistant can reach the internet
 
-### No Data
-- Some schools may not have menus available for certain dates
-- Check the Home Assistant logs for API errors
-- Verify your grade and meal type settings
+### No Data / "No School"
+- An empty menu is what the dashboard calls "No School". Weekends are empty on purpose.
+- On a weekday, paste the public guest menu URL into the integration options. A saved school id can stop matching after SchoolCafe changes it.
+- Serving line `Main Lines` no longer matches. Use `Main Line`, or leave the default and the integration will switch to the lines the school publishes.
+- The sample dashboard must use `sensor.schoolcafe_blue_line_today` and `sensor.schoolcafe_gold_line_today`. Older `schoolcafe_fixed_` entities are not created anymore.
 
 ### Sensor Not Updating
 - Check the poll interval setting

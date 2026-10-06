@@ -20,13 +20,13 @@ cards:
           conditions:
             - condition: template
               value_template: >
-                {{ states('sensor.schoolcafe_fixed_blue_line_today') not in ['unavailable', 'unknown', 'No items available'] }}
+                {{ states('sensor.schoolcafe_blue_line_today') not in ['unavailable', 'unknown', 'No items available'] }}
           row:
-            entity: sensor.schoolcafe_fixed_blue_line_today
+            entity: sensor.schoolcafe_blue_line_today
             name: "🔵 Blue Line"
             icon: mdi:food
             secondary_info: >
-              {% set items = state_attr('sensor.schoolcafe_fixed_blue_line_today', 'items') %}
+              {% set items = state_attr('sensor.schoolcafe_blue_line_today', 'items') %}
               {% if items and items|length > 0 %}
                 {% set item = items[0] %}
                 {{ item.calories }} cal • {{ item.rating }}⭐ • {{ item.likes_percentage }}% like it
@@ -37,13 +37,13 @@ cards:
           conditions:
             - condition: template
               value_template: >
-                {{ states('sensor.schoolcafe_fixed_gold_line_today') not in ['unavailable', 'unknown', 'No items available'] }}
+                {{ states('sensor.schoolcafe_gold_line_today') not in ['unavailable', 'unknown', 'No items available'] }}
           row:
-            entity: sensor.schoolcafe_fixed_gold_line_today
+            entity: sensor.schoolcafe_gold_line_today
             name: "🟡 Gold Line"
             icon: mdi:food
             secondary_info: >
-              {% set items = state_attr('sensor.schoolcafe_fixed_gold_line_today', 'items') %}
+              {% set items = state_attr('sensor.schoolcafe_gold_line_today', 'items') %}
               {% if items and items|length > 0 %}
                 {% set item = items[0] %}
                 {{ item.calories }} cal • {{ item.rating }}⭐ • {{ item.likes_percentage }}% like it
@@ -54,8 +54,8 @@ cards:
           conditions:
             - condition: template
               value_template: >
-                {% set blue_items = state_attr('sensor.schoolcafe_fixed_blue_line_today', 'items') %}
-                {% set gold_items = state_attr('sensor.schoolcafe_fixed_gold_line_today', 'items') %}
+                {% set blue_items = state_attr('sensor.schoolcafe_blue_line_today', 'items') %}
+                {% set gold_items = state_attr('sensor.schoolcafe_gold_line_today', 'items') %}
                 {% set all_allergens = [] %}
                 {% if blue_items %}
                   {% for item in blue_items %}
@@ -71,8 +71,8 @@ cards:
           row:
             type: section  
             label: >
-              ⚠️ Allergens: {% set blue_items = state_attr('sensor.schoolcafe_fixed_blue_line_today', 'items') %}
-              {% set gold_items = state_attr('sensor.schoolcafe_fixed_gold_line_today', 'items') %}
+              ⚠️ Allergens: {% set blue_items = state_attr('sensor.schoolcafe_blue_line_today', 'items') %}
+              {% set gold_items = state_attr('sensor.schoolcafe_gold_line_today', 'items') %}
               {% set all_allergens = [] %}
               {% if blue_items %}
                 {% for item in blue_items %}
@@ -91,8 +91,8 @@ cards:
           conditions:
             - condition: template
               value_template: >
-                {{ states('sensor.schoolcafe_fixed_blue_line_today') in ['unavailable', 'unknown', 'No items available'] and
-                   states('sensor.schoolcafe_fixed_gold_line_today') in ['unavailable', 'unknown', 'No items available'] }}
+                {{ states('sensor.schoolcafe_blue_line_today') in ['unavailable', 'unknown', 'No items available'] and
+                   states('sensor.schoolcafe_gold_line_today') in ['unavailable', 'unknown', 'No items available'] }}
           row:
             type: section
             label: "🏫 No School Today"
@@ -102,15 +102,15 @@ cards:
     title: "📋 This Week at a Glance"
     entities:
       # Tomorrow
-      - entity: sensor.schoolcafe_fixed_blue_line_tomorrow
+      - entity: sensor.schoolcafe_blue_line_tomorrow
         name: >
           Tomorrow ({{ (now().date() + timedelta(days=1)).strftime('%a %m/%d') }})
         icon: mdi:calendar-today
         secondary_info: >
-          {% if states('sensor.schoolcafe_fixed_blue_line_tomorrow') not in ['unavailable', 'unknown', 'No items available'] %}
-            🔵 {{ states('sensor.schoolcafe_fixed_blue_line_tomorrow') }}
-          {% elif states('sensor.schoolcafe_fixed_gold_line_tomorrow') not in ['unavailable', 'unknown', 'No items available'] %}
-            🟡 {{ states('sensor.schoolcafe_fixed_gold_line_tomorrow') }}
+          {% if states('sensor.schoolcafe_blue_line_tomorrow') not in ['unavailable', 'unknown', 'No items available'] %}
+            🔵 {{ states('sensor.schoolcafe_blue_line_tomorrow') }}
+          {% elif states('sensor.schoolcafe_gold_line_tomorrow') not in ['unavailable', 'unknown', 'No items available'] %}
+            🟡 {{ states('sensor.schoolcafe_gold_line_tomorrow') }}
           {% else %}
             No School
           {% endif %}
