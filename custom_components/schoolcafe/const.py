@@ -29,7 +29,7 @@ MAX_POLL_INTERVAL = 1440  # Maximum: 1440 minutes (24 hours)
 # API constants
 SCHOOLCAFE_API_BASE = "https://webapis.schoolcafe.com/api"
 DEFAULT_TIMEOUT = 30  # seconds
-MAX_RETRIES = 3
+MAX_RETRIES = 4
 RETRY_DELAY = 2  # seconds
 
 # Sensor constants

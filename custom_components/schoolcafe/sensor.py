@@ -7,7 +7,9 @@ from typing import Any, Dict, List, Optional
 
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.event import async_track_time_change
+from homeassistant.util import dt as dt_util
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
@@ -46,7 +48,10 @@ async def async_setup_entry(
     _LOGGER.debug("Setting up SchoolCafe sensor platform")
 
     api: SchoolCafeAPI = hass.data[DOMAIN][config_entry.entry_id]
-    poll_interval: int = config_entry.data.get(CONF_POLL_INTERVAL, DEFAULT_POLL_INTERVAL)
+    poll_interval: int = config_entry.options.get(
+        CONF_POLL_INTERVAL,
+        config_entry.data.get(CONF_POLL_INTERVAL, DEFAULT_POLL_INTERVAL),
+    )
 
     # Create update coordinator
     coordinator = SchoolCafeDataUpdateCoordinator(
@@ -59,13 +64,26 @@ async def async_setup_entry(
     # Fetch initial data
     await coordinator.async_config_entry_first_refresh()
 
+    # Roll "today" over right after midnight and refresh again before the
+    # morning routine, independent of the polling interval.
+    async def _scheduled_refresh(now: datetime) -> None:
+        _LOGGER.debug("Scheduled SchoolCafe refresh at %s", now)
+        coordinator.async_update_listeners()  # re-render date-relative sensors
+        await coordinator.async_request_refresh()
+
+    for hour, minute in ((0, 1), (4, 30), (5, 0)):
+        config_entry.async_on_unload(
+            async_track_time_change(
+                hass, _scheduled_refresh, hour=hour, minute=minute, second=0
+            )
+        )
+
     # Create sensor entities for each day and menu line combination
     entities = []
     
     for day_offset in range(api.days_to_fetch):
-        target_date = datetime.now().date() + timedelta(days=day_offset)
-        date_key = target_date.strftime("%Y-%m-%d")
-        
+        date_key = (dt_util.now().date() + timedelta(days=day_offset)).strftime("%Y-%m-%d")
+
         for menu_line in api.menu_lines:
             entity = SchoolCafeMenuSensor(
                 coordinator=coordinator,
@@ -105,11 +123,28 @@ class SchoolCafeDataUpdateCoordinator(DataUpdateCoordinator):
         try:
             _LOGGER.debug("Fetching data from SchoolCafe API")
             data = await self.api.get_menu_data()
-            
+
             if data is None:
                 _LOGGER.warning("No data received from SchoolCafe API")
                 return self.data or {}
-            
+
+            # Keep the last good payload for any day whose fetch failed this time,
+            # instead of replacing it with an empty menu.
+            previous = self.data or {}
+            for date_key in self.api.last_failed_dates:
+                if date_key in previous:
+                    data[date_key] = previous[date_key]
+            # Retain recent previous days only if still in the window.
+            window_start = dt_util.now().date().strftime("%Y-%m-%d")
+            for date_key, menu in previous.items():
+                if date_key >= window_start and date_key not in data:
+                    data[date_key] = menu
+
+            if self.api.last_failed_dates:
+                _LOGGER.warning(
+                    "SchoolCafe fetch failed for %s; kept previous data where available",
+                    ", ".join(self.api.last_failed_dates),
+                )
             _LOGGER.debug("Successfully fetched menu data for %d days", len(data))
             return data
             
@@ -167,7 +202,7 @@ class SchoolCafeMenuSensor(CoordinatorEntity, SensorEntity):
         elif day_offset == 1:
             day_name = "Tomorrow"
         else:
-            target_date = datetime.now().date() + timedelta(days=day_offset)
+            target_date = dt_util.now().date() + timedelta(days=day_offset)
             day_name = f"Today +{day_offset} ({target_date.strftime('%A')})"
         
         self._attr_name = f"SchoolCafe {menu_line} {day_name}"
@@ -175,12 +210,25 @@ class SchoolCafeMenuSensor(CoordinatorEntity, SensorEntity):
         _LOGGER.debug("Initialized SchoolCafe menu sensor: %s", self._attr_name)
 
     @property
+    def _target_date(self) -> date:
+        """The date this sensor represents, computed now in HA local time."""
+        return dt_util.now().date() + timedelta(days=self._day_offset)
+
+    @property
+    def _current_date_key(self) -> str:
+        return self._target_date.strftime("%Y-%m-%d")
+
+    @property
     def available(self) -> bool:
-        """Return True if entity is available."""
+        """Return True if entity is available.
+
+        Uses the date computed at read time so sensors roll over at midnight
+        without a reload, and stays available with the last good data if a
+        refresh fails.
+        """
         return (
-            self.coordinator.last_update_success 
-            and self.coordinator.data is not None
-            and self._date_key in self.coordinator.data
+            self.coordinator.data is not None
+            and self._current_date_key in self.coordinator.data
         )
 
     @property
@@ -189,7 +237,7 @@ class SchoolCafeMenuSensor(CoordinatorEntity, SensorEntity):
         if not self.available:
             return None
             
-        menu_data = self.coordinator.data.get(self._date_key, {})
+        menu_data = self.coordinator.data.get(self._current_date_key, {})
         menu_items = self._api.extract_menu_items_for_line(menu_data, self._menu_line)
         
         if not menu_items:
@@ -203,15 +251,15 @@ class SchoolCafeMenuSensor(CoordinatorEntity, SensorEntity):
         if not self.available:
             return {}
             
-        menu_data = self.coordinator.data.get(self._date_key, {})
+        menu_data = self.coordinator.data.get(self._current_date_key, {})
         menu_items = self._api.extract_menu_items_for_line(menu_data, self._menu_line)
         
         # Calculate if this is a weekday (Monday=0, Sunday=6)
-        target_date = datetime.now().date() + timedelta(days=self._day_offset)
+        target_date = self._target_date
         is_weekday = target_date.weekday() < 5  # Monday(0) through Friday(4)
         
         attributes = {
-            ATTR_SERVING_DATE: self._date_key,
+            ATTR_SERVING_DATE: self._current_date_key,
             ATTR_CATEGORY: self._menu_line,
             ATTR_SERVING_LINE: self._api.serving_line,
             ATTR_IS_WEEKDAY: is_weekday,

@@ -11,7 +11,9 @@ import logging
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryError
+from homeassistant.exceptions import ConfigEntryError, ConfigEntryNotReady
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.util import dt as dt_util
 
 from .api import SchoolCafeAPI
 from .const import DOMAIN
@@ -52,7 +54,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         view_id=config.get("view_id"),
         menu_url=config.get("menu_url"),
         school_name=config.get("school_name"),
+        session=async_get_clientsession(hass),
     )
+    # Use HA's configured time zone for "today", not the container's clock.
+    api.today_provider = lambda: dt_util.now().date()
 
     # Test the connection
     try:
@@ -61,7 +66,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     except Exception as e:
         _LOGGER.error("Failed to connect to SchoolCafe API: %s", e)
         await api.close()
-        raise ConfigEntryError(f"Cannot connect to SchoolCafe: {e}") from e
+        # NotReady makes HA retry setup with backoff instead of giving up
+        # until a manual reload (e.g. when the network is not up at boot).
+        raise ConfigEntryNotReady(f"Cannot connect to SchoolCafe: {e}") from e
 
     # Store the API instance in hass.data
     hass.data.setdefault(DOMAIN, {})
