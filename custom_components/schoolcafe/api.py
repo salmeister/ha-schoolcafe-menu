@@ -93,6 +93,7 @@ class SchoolCafeAPI:
         view_id: Optional[str] = None,
         menu_url: Optional[str] = None,
         school_name: Optional[str] = None,
+        session: Optional[aiohttp.ClientSession] = None,
     ) -> None:
         """Initialize the SchoolCafe API client."""
         self.school_id = school_id
@@ -106,12 +107,19 @@ class SchoolCafeAPI:
         self.menu_lines = menu_lines or ["BLUE LINE", "GOLD LINE"]
         self.days_to_fetch = days_to_fetch
         self.timeout = timeout
-        self._session: Optional[aiohttp.ClientSession] = None
+        self._session: Optional[aiohttp.ClientSession] = session
+        # Only close sessions we created; a shared HA session must stay open.
+        self._owns_session = session is None
         self._reported_unknown_school = False
+        # Dates whose fetch failed on the last run (callers keep prior data for them).
+        self.last_failed_dates: List[str] = []
+        # Callable returning today's local date; set by the integration to dt_util.
+        self.today_provider = None
 
     async def _get_session(self) -> aiohttp.ClientSession:
         """Get or create an aiohttp session."""
         if self._session is None or self._session.closed:
+            self._owns_session = True
             timeout = ClientTimeout(total=self.timeout)
             self._session = aiohttp.ClientSession(
                 timeout=timeout,
@@ -122,9 +130,9 @@ class SchoolCafeAPI:
 
     async def close(self) -> None:
         """Close the aiohttp session."""
-        if self._session and not self._session.closed:
+        if self._owns_session and self._session and not self._session.closed:
             await self._session.close()
-            self._session = None
+        self._session = None
 
     def _format_date(self, date: datetime) -> str:
         """Format date for SchoolCafe API (MM/DD/YYYY)."""
@@ -149,24 +157,37 @@ class SchoolCafeAPI:
         return url
 
     async def _request_json(self, url: str) -> Any:
-        """GET a URL and return decoded JSON, unwrapping double-encoded payloads."""
+        """GET a URL and return decoded JSON, unwrapping double-encoded payloads.
+
+        Retries timeouts, connection errors, 429 and 5xx responses with
+        exponential backoff. Other 4xx responses fail immediately.
+        """
+        last_err: Optional[Exception] = None
         for attempt in range(1, MAX_RETRIES + 1):
+            delay = RETRY_DELAY * (2 ** (attempt - 1))
             try:
                 session = await self._get_session()
-                async with session.get(url) as response:
+                async with session.get(
+                    url, timeout=ClientTimeout(total=self.timeout)
+                ) as response:
                     _LOGGER.debug("Attempt %d: %s -> %s", attempt, url, response.status)
 
                     if response.status == 404:
                         return None
                     if response.status != 200:
-                        error_text = await response.text()
-                        _LOGGER.warning("HTTP error %d: %s", response.status, error_text)
-                        if attempt < MAX_RETRIES:
-                            await asyncio.sleep(RETRY_DELAY)
-                            continue
-                        raise SchoolCafeConnectionError(
+                        error_text = (await response.text())[:300]
+                        last_err = SchoolCafeConnectionError(
                             f"HTTP error {response.status}: {error_text}"
                         )
+                        retryable = response.status == 429 or response.status >= 500
+                        if retryable and attempt < MAX_RETRIES:
+                            _LOGGER.warning(
+                                "SchoolCafe HTTP %d (attempt %d/%d), retrying in %ss",
+                                response.status, attempt, MAX_RETRIES, delay,
+                            )
+                            await asyncio.sleep(delay)
+                            continue
+                        raise last_err
 
                     try:
                         payload = await response.json(content_type=None)
@@ -183,20 +204,22 @@ class SchoolCafeAPI:
                             return payload
                     return payload
 
-            except ClientError as err:
+            except (ClientError, asyncio.TimeoutError) as err:
+                last_err = err
                 if attempt < MAX_RETRIES:
                     _LOGGER.warning(
-                        "Attempt %d failed with connection error: %s, retrying...",
-                        attempt,
-                        err,
+                        "SchoolCafe request failed (attempt %d/%d): %s, retrying in %ss",
+                        attempt, MAX_RETRIES, repr(err), delay,
                     )
-                    await asyncio.sleep(RETRY_DELAY)
+                    await asyncio.sleep(delay)
                     continue
                 raise SchoolCafeConnectionError(
-                    f"Connection failed after {MAX_RETRIES} attempts: {err}"
+                    f"Connection failed after {MAX_RETRIES} attempts: {err!r}"
                 ) from err
 
-        raise SchoolCafeAPIError(f"Failed to retrieve data after {MAX_RETRIES} attempts")
+        raise SchoolCafeAPIError(
+            f"Failed to retrieve data after {MAX_RETRIES} attempts: {last_err}"
+        )
 
     async def get_menu_bookmark(self, view_id: str) -> Optional[Dict[str, Any]]:
         """Resolve a public guest menu link to the school and filters it was saved with."""
@@ -281,8 +304,7 @@ class SchoolCafeAPI:
         """Test the connection to SchoolCafe API."""
         try:
             await self.refresh_school_from_bookmark()
-            today = datetime.now().date()
-            await self.get_menu_for_date(today)
+            await self.get_menu_for_date(self._today())
             _LOGGER.debug("Connection test successful")
             return True
         except Exception as err:
@@ -311,6 +333,12 @@ class SchoolCafeAPI:
         _LOGGER.debug("Successfully retrieved menu data for %s", serving_date)
         return payload
 
+    def _today(self):
+        """Return today's date in HA's configured time zone."""
+        if self.today_provider is not None:
+            return self.today_provider()
+        return datetime.now().date()
+
     async def get_menu_data(self) -> Dict[str, Dict[str, Any]]:
         """
         Get menu data for the configured number of days.
@@ -335,7 +363,8 @@ class SchoolCafeAPI:
     async def _fetch_menu_range(self) -> Dict[str, Dict[str, Any]]:
         """Fetch menu payloads for each configured day."""
         results = {}
-        today = datetime.now().date()
+        failed: List[str] = []
+        today = self._today()
 
         for i in range(self.days_to_fetch):
             target_date = today + timedelta(days=i)
@@ -347,13 +376,18 @@ class SchoolCafeAPI:
                 _LOGGER.debug("Retrieved menu data for %s", date_key)
             except Exception as err:
                 _LOGGER.warning("Failed to get menu data for %s: %s", date_key, err)
-                results[date_key] = {}
+                failed.append(date_key)
 
+        self.last_failed_dates = failed
+        if failed and len(failed) == self.days_to_fetch:
+            raise SchoolCafeConnectionError(
+                f"All {self.days_to_fetch} menu requests failed"
+            )
         return results
 
     def _first_weekday(self) -> Optional[datetime.date]:
         """Return the first weekday in the fetch window."""
-        today = datetime.now().date()
+        today = self._today()
         for offset in range(self.days_to_fetch):
             target_date = today + timedelta(days=offset)
             if target_date.weekday() < 5:
